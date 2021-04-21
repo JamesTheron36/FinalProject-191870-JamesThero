@@ -8,6 +8,8 @@ TagManager:
   - Slot 2
   - Slot 3
   - Slot4
+  - card
+  - cardShow
   layers:
   - Default
   - TransparentFX

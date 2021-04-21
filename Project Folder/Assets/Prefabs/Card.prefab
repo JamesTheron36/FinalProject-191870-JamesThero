@@ -133,16 +133,31 @@ MonoBehaviour:
   flipped: {fileID: 3254626953934398625}
   primary: 0
   secondary: 0
-  cardID: 0
   earthBack: {fileID: 21300000, guid: e998caf6fdd469745870641f587bb249, type: 3}
   fireBack: {fileID: 21300000, guid: 540cb4ed1376942468b6da709c72c6cc, type: 3}
   waterBack: {fileID: 21300000, guid: b8c625006d5079549a47b43e0a6836e2, type: 3}
   dragonBack: {fileID: 21300000, guid: 38c2e7d57cf80004caf40ebf318ef6f5, type: 3}
   iceBack: {fileID: 21300000, guid: 9bc92e8de5434a34daaf770d2c8f4fbd, type: 3}
+  earthFlip: {fileID: 21300000, guid: 39a4127ffed755747ae6e89b5aef1c02, type: 3}
+  fireFlip: {fileID: 21300000, guid: a2f35c08a3c9a4343b3bcdfe4a347704, type: 3}
+  waterFlip: {fileID: 21300000, guid: d8142731e3ba2914284202c28270b7eb, type: 3}
+  dragonFlip: {fileID: 21300000, guid: cd625e6a0df9a884da83ac0cc6c03bd3, type: 3}
+  iceFlip: {fileID: 21300000, guid: ca4b19ef2154e4242bce08860014373a, type: 3}
   rockImage: {fileID: 21300000, guid: 32e67b848404c7d4888c2e91778c2328, type: 3}
   sciImage: {fileID: 21300000, guid: c280b60cd1aad484a9e9102dd4e78b76, type: 3}
   paperImage: {fileID: 21300000, guid: 0efb3a6c2f710034fa2269300681ae40, type: 3}
-  OppCard: 0
+  playerPlayedPos: {fileID: 0}
+  handPos:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  oppPos:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  oppCard: 0
 --- !u!1 &7267377549680822210
 GameObject:
   m_ObjectHideFlags: 0
@@ -181,7 +196,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7267377549680822210}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1

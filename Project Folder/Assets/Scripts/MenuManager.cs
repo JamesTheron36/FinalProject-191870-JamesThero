@@ -26,10 +26,29 @@ public class MenuManager : MonoBehaviour
         critHit.gameObject.SetActive(true);
         StartCoroutine(CritHitDelay());
     }
-    
+    public void LoadTut1()
+    {
+        SceneManager.LoadScene("Tut1");
+    }
+    public void LoadTut2()
+    {
+        SceneManager.LoadScene("Tut2");
+    }
     public void LoadGame()
     {
         SceneManager.LoadScene("Game");
+    }
+    public void LoadGame2()
+    {
+        SceneManager.LoadScene("Game 2");
+    }
+    public void LoadGame3()
+    {
+        SceneManager.LoadScene("Game 3");
+    }
+    public void LoadTypeSelect()
+    {
+        SceneManager.LoadScene("TypeSelect");
     }
     public void Quit()
     {
@@ -38,6 +57,10 @@ public class MenuManager : MonoBehaviour
     public void Menu()
     {
         SceneManager.LoadScene("Menu");
+    }
+    public void DeckBuilder()
+    {
+        SceneManager.LoadScene("DeckBuilder");
     }
     IEnumerator CritHitDelay()
     {

@@ -47,3 +47,9 @@ MonoBehaviour:
   def: 5
   acc: 4
   type: 0
+  healthBar: {fileID: 0}
+  healthBack: {fileID: 0}
+  health: 100
+  currHealth: {x: 1, y: 1, z: 1}
+  newHealth: {x: 1, y: 1, z: 1}
+  spd: 1

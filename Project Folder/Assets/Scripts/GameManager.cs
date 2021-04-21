@@ -5,189 +5,370 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField]
-    Card[] playerDeck = new Card[8];
-    [SerializeField]
-    Card[] oppDeck = new Card[8];
+    [SerializeField] Card[] playerDeck = new Card[8];
+    [SerializeField] Card[] oppDeck = new Card[8];
 
-    [SerializeField]
-    MenuManager mm;
+    [SerializeField] MenuManager mm;
 
-    [SerializeField]
-    Card activeCardPlayer;
+    [SerializeField] Card activeCardPlayer;
     
-    [SerializeField]
-    Card activeCardOpponent;
+    [SerializeField] Card activeCardOpponent;
 
-    [SerializeField]
-    Card Temp;
+    [SerializeField] Card Temp;
 
-    [SerializeField]
-    Transform[] handCards = new Transform[4];
+    [SerializeField] Transform[] handCardsPos = new Transform[4];
     
-    [SerializeField]
-    Transform[] OppHandPos = new Transform[4];
+    [SerializeField] Transform[] oppHandPos = new Transform[4];
 
-    [SerializeField]
+    [SerializeField] Card[] handCards = new Card[4];
+    [SerializeField] Card[] oppCards = new Card[4];
+
     public Transform deckPos, deckOppPos;
+    [SerializeField] SoundManager sm;
+    public TextManager tm;
 
-
-    [SerializeField]
+    //[SerializeField]
     public Transform playerPlayedPos;
-    [SerializeField]
+    //[SerializeField]
     public Transform oppPlayedPos;
 
     bool played = false;
     
-    [SerializeField]
-    Player player;
-    [SerializeField]
-    Player opp;
+    [SerializeField] Player player;
+    [SerializeField] Player opp;
 
-    [SerializeField]
-    float critMod = 0.5f;
-    
-    [SerializeField]
-    float atkTypeMod = 0.5f;
-    
-    [SerializeField]
-    float counterMod = 0.5f;
+    [SerializeField] PlayerManager pm;
+
+
+
+    [SerializeField] float critMod = 0.5f;
+    [SerializeField] float atkFractionMod = 0.3f;
+    [SerializeField] float defFractionMod = 0.3f;
+    [SerializeField] float nerfDefense = 0.2f;
+    [SerializeField] float typeFractionMod = 0.3f;
+    [SerializeField] float nerfType = 0.35f;
+    [SerializeField] float counterMod = 0.4f;
 
     public SpriteRenderer oppWins;
     public SpriteRenderer youWin;
 
-    public float maxBaseMultiple = 15.0f;
-    public float minBaseMultiple = 10.0f;
-    int index;
-    int oppIndex;
-    Card[] oppHand = new Card[4];
     bool finished = false;
+    int oppTypeIndex;
+
+    
+    
+    public HealthBar playerHB;
+    public HealthBar oppHB;
+    bool hovering = false;
+    int roundCount = 0;
+    [SerializeField] int stage = 1;
+
+    int[] playerNextHand = new int[4];
+    int[] oppNextHand = new int[4];
+    int set;
+    public int[] typeScores = { 1, 1, 1, 1, 1 };
+    bool levelUp;
+    //int time = 0;
+    //public GameObject test;
     // Start is called before the first frame update
     void Start()
     {
+        levelUp = false;
+        DeckIni();
+        set = 0;
+        SetHandPositions();
+        InstantiateHand();
+        InstantiateOpponentCards();
         youWin.enabled = false;
         oppWins.enabled = false;
-        UpdatePlayerHand();
-        HidePlayerDeck();
-        UpdateOppHand();
-        HideOppDeck();
-        activeCardOpponent.HideCard();
-        activeCardPlayer.HideCard();
-    }
+        int t = TypeMenu.type;
+        player.SetType(t);
+        playerHB.SetType(t);
+        
+        switch (stage)
+        {
+            case 1:
+                opp.SetType(1);
+                oppHB.SetType(1);
+                break;
+            case 2:
+                opp.SetType(4);
+                oppHB.SetType(4);
+                break;
+            case 3:
+                opp.SetType(5);
+                oppHB.SetType(5);
+                break;
 
+        }
+        
+        roundCount = 0;
+    }
+    
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            opp.health = 0;
+        }
+        //time += time.
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit))
+        if(roundCount == 4)
         {
-            if (hit.transform.name == "Card Place Holder 1" && Input.GetMouseButtonDown(0) && played == false && finished == false)
+            set++;
+            if(set%2 == 1)
             {
-                index = 0;
-                activeCardPlayer.Change(playerDeck[index]);
-                activeCardPlayer.ShowCard();
-                played = true;
-                //Debug.Log("hit");
+                InsantiateNextHand();
+                roundCount = 0;
+                ReversePlayed();
             }
-
-            if (hit.transform.name == "Card Place Holder 2" && Input.GetMouseButtonDown(0) && played == false && finished == false)
+            else
             {
-                index = 1;
-                activeCardPlayer.Change(playerDeck[index]);
-                activeCardPlayer.ShowCard();
-                played = true;
-                //Debug.Log("hit");
+                InstantiateHand();
+                InstantiateOpponentCards();
+                roundCount = 0;
+                ReversePlayed();
             }
-
-            if (hit.transform.name == "Card Place Holder 3" && Input.GetMouseButtonDown(0) && played == false && finished == false)
-            {
-                index = 2;
-                activeCardPlayer.Change(playerDeck[index]);
-                activeCardPlayer.ShowCard();
-                played = true;
-                //Debug.Log("hit");
-            }
-
-            if (hit.transform.name == "Card Place Holder 4" && Input.GetMouseButtonDown(0) && played == false && finished == false)
-            {
-                index = 3;
-                activeCardPlayer.Change(playerDeck[index]);
-                activeCardPlayer.ShowCard();
-                played = true;
-                //Debug.Log("hit");
-            }
-
-        }
-        if(played == true && finished == false)
-        {
-
-            StartCoroutine(OpponentPlayDelay());
-            StartCoroutine(DamageDelay());
-            played = false;
             
         }
-
-        if(player.health <= 0)
+        if (Physics.Raycast(ray, out hit))
         {
+            if(hit.transform.name == "Card Place Holder 1" && !handCards[0].played && !hovering)
+            {
+                sm.PlayClick();
+                hovering = true;
+            }
+            if (hit.transform.name == "Card Place Holder 2" && !handCards[1].played && !hovering)
+            {
+                sm.PlayClick();
+                hovering = true;
+            }
+            if (hit.transform.name == "Card Place Holder 3" && !handCards[2].played && !hovering)
+            {
+                sm.PlayClick();
+                hovering = true;
+            }
+            if (hit.transform.name == "Card Place Holder 4" && !handCards[3].played && !hovering)
+            {
+                sm.PlayClick();
+                hovering = true;
+            }
+
+
+            if (hit.transform.name == "Card Place Holder 1" && !handCards[0].played)
+            {
+                
+                //Debug.Log("hit");
+                handCards[0].Magnify();
+                if (Input.GetMouseButtonDown(0) && played == false && finished == false )
+                {
+                    
+                    
+                    //handCards[0].Magnify();
+                    handCards[0].PlayCard();
+                    activeCardPlayer.Change(handCards[0]);
+                    activeCardPlayer.ShowCard();
+                    played = true;
+                    roundCount++;
+                    Debug.Log("hit");
+                    
+                    switch (stage)
+                    {
+                        case 1:
+                            Opponent1();
+                            break;
+                        case 2:
+                            Opponent2();
+                            break;
+                        case 3:
+                            Opponent3();
+                            break;
+                    }
+                    activeCardOpponent.ShowCard();
+                }
+
+            }
+            else
+            {
+                handCards[0].DeMagnify();
+                
+            }
+            
+
+            if (hit.transform.name == "Card Place Holder 2" && !handCards[1].played)
+            {
+
+                
+                handCards[1].Magnify();
+                if (Input.GetMouseButtonDown(0) && played == false && finished == false)
+                {
+                    
+                    
+                    handCards[1].PlayCard();
+                    activeCardPlayer.Change(handCards[1]);
+                    activeCardPlayer.ShowCard();
+                    played = true;
+                    roundCount++;
+                    //Debug.Log("hit");
+                    activeCardOpponent.ShowCard();
+                    switch (stage)
+                    {
+                        case 1:
+                            Opponent1();
+                            break;
+                        case 2:
+                            Opponent2();
+                            break;
+                        case 3:
+                            Opponent3();
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                handCards[1].DeMagnify();
+                
+            }
+
+            if (hit.transform.name == "Card Place Holder 3" && !handCards[2].played)
+            {
+                
+                handCards[2].Magnify();
+               
+                if (Input.GetMouseButtonDown(0) && played == false && finished == false)
+                {
+                    
+                    ;
+                    handCards[2].PlayCard();
+                    activeCardPlayer.Change(handCards[2]);
+                    activeCardPlayer.ShowCard();
+                    played = true;
+                    roundCount++;
+                    //Debug.Log("hit");
+                    switch (stage)
+                    {
+                        case 1:
+                            Opponent1();
+                            break;
+                        case 2:
+                            Opponent2();
+                            break;
+                        case 3:
+                            Opponent3();
+                            break;
+                    }
+                    activeCardOpponent.ShowCard();
+                }
+            }
+            else
+            {
+                handCards[2].DeMagnify();
+                
+            }
+
+            if (hit.transform.name == "Card Place Holder 4" && !handCards[3].played)
+            {
+                handCards[3].Magnify();
+                
+                if (Input.GetMouseButtonDown(0) && played == false && finished == false)
+                {
+                    
+                    
+                    handCards[3].PlayCard();
+                    activeCardPlayer.Change(handCards[3]);
+                    activeCardPlayer.ShowCard();
+                    played = true;
+                    roundCount++;
+                    //Debug.Log("hit");
+                    switch (stage)
+                    {
+                        case 1:
+                            Opponent1();
+                            break;
+                        case 2:
+                            Opponent2();
+                            break;
+                        case 3:
+                            Opponent3();
+                            break;
+                    }
+                    activeCardOpponent.ShowCard();
+                }
+            }
+            else
+            {
+                handCards[3].DeMagnify();
+                
+            }
+
+        }
+        else
+        {
+            ReverseMagnify();
+            hovering = false;
+        }
+        if(played == true)
+        {
+            CommenceTurn();
+            played = false;
+        }
+        if(player.health < 1)
+        {
+            
             youWin.enabled = false;
             oppWins.enabled = true;
             finished = true;
-            StartCoroutine(ResetDelay());
+            
+            StartCoroutine(GameOverDelay());
             
 
         }
-        if (opp.health <= 0)
+        if (opp.health < 1)
         {
             youWin.enabled = true;
             oppWins.enabled = false;
             finished = true;
-            StartCoroutine(ResetDelay());
-
+            
+            if (!levelUp)
+            {
+                pm.LvlUp(typeScores[0], typeScores[1], typeScores[2], typeScores[3], typeScores[4]);
+                tm.SetLvl();
+                levelUp = true;
+            }
+            
+            //StartCoroutine(ResetDelay());
+            
+            
         }
 
     }
 
-    void UpdatePlayerHand()
+    
+
+    
+    void ReversePlayed()
     {
-        for(int loop = 0; loop < handCards.Length; loop++)
+        foreach(Card element in handCards)
         {
-            playerDeck[loop].ShowCard();
-            playerDeck[loop].transform.position = handCards[loop].position;
+            element.played = false;
         }
-    }
-
-    void HidePlayerDeck()
-    {
-        for(int loop = playerDeck.Length - handCards.Length; loop < playerDeck.Length; loop++)
+        foreach (Card element in oppCards)
         {
-            playerDeck[loop].HideCard();
-            playerDeck[loop].transform.position = deckPos.position;
-            //Debug.Log(loop);
+            element.played = false;
         }
     }
-    void PlayCardPlayer(Card c)
-    {
-        activeCardPlayer.Change(c);
-        activeCardPlayer.ShowCard();
-    }
+    
     void PlayCardOpp(Card c)
     {
         //c.transform.position = oppPlayedPos.position;
         activeCardOpponent.Change(c);
     }
-    void UpdateOppHand()
-    {
-        for(int loop = 0; loop < oppHand.Length; loop++)
-        {
-            oppDeck[loop].HideCard();
-            oppDeck[loop].transform.position = OppHandPos[loop].position;
-        }
-    }
     void HideOppDeck()
     {
-        for (int loop = oppDeck.Length - handCards.Length; loop < oppDeck.Length; loop++)
+        for (int loop = oppDeck.Length - handCardsPos.Length; loop < oppDeck.Length; loop++)
         {
             oppDeck[loop].HideCard();
             oppDeck[loop].transform.position = deckOppPos.position;
@@ -196,129 +377,120 @@ public class GameManager : MonoBehaviour
     }
 
 
-    void ReturnPlayerCard(Card card)
-    {
-        int num = playerDeck.Length - handCards.Length;
-        //Debug.Log("index is " + index);
-        int size = playerDeck.Length - 1;
-        Temp.SetEqual(playerDeck[size]);
-        playerDeck[size].Change(playerDeck[index]);
-        playerDeck[index].Change(Temp);
-        for (int loop = size; loop > num + 1; loop--)
-        {
-            Temp.SetEqual(playerDeck[loop]);
-            playerDeck[loop].Change(playerDeck[loop - 1]);
-            playerDeck[loop - 1].Change(Temp);
-        }
-        
-        UpdatePlayerHand();
-        HidePlayerDeck();
-        
-    }
-
-    void ReturnOppCard(Card card)
-    {
-        int num = oppDeck.Length - handCards.Length;
-        //Debug.Log("index is " + index);
-        int size = oppDeck.Length - 1;
-        Temp.SetEqual(oppDeck[size]);
-        oppDeck[size].Change(oppDeck[oppIndex]);
-        oppDeck[oppIndex].Change(Temp);
-        for (int loop = size; loop > num + 1; loop--)
-        {
-            Temp.SetEqual(oppDeck[loop]);
-            oppDeck[loop].Change(oppDeck[loop - 1]);
-            oppDeck[loop - 1].Change(Temp);
-        }
-        
-        UpdateOppHand();
-        HideOppDeck();
-
-    }
-
     public float CalculateDmg(Card cAtk, Card cDef, Player att, Player df)
     {
         float dmg;
-        float counterBonus = 0;
-        float ratio = ((float)att.GetAtk() / (float)df.GetDef());
-        float maxBase = ratio * maxBaseMultiple;
-        float minBase = ratio * minBaseMultiple;
-        float baseDmg = Random.Range(minBase, maxBase);
-        float atkTypeBonus = 0;
-        if (cAtk.CounterSecondary(cDef))
+        float counterBonus = 1;
+        float baseDmg;
+        float atkTypeDmg = 0;
+        float typeDmg = 1;
+        int cardType = cAtk.GetType();
+        float typeNum = Random.Range(4, 8);
+
+        float max = (float) att.GetAtk() + (atkFractionMod * (float) att.GetAtk());
+        float min = (float) att.GetAtk() + (atkFractionMod * (float) att.GetAtk());
+        float minDef = (float) df.GetDef() - ((float) df.GetDef() * defFractionMod);
+        baseDmg = Random.Range(min, max) - (nerfDefense * Random.Range(minDef, (float)df.GetDef()));
+        
+        switch (cardType)
+        {
+            case 1:
+                min = (float) att.GetFire() - ((float) att.GetFire() * typeFractionMod);
+                max = (float) att.GetFire() + ((float) att.GetFire() * typeFractionMod);
+                typeDmg = nerfType * Random.Range(min , max);
+                break;
+            case 2:
+                min = (float)att.GetIce() - ((float)att.GetIce() * typeFractionMod);
+                max = (float)att.GetFire() + ((float)att.GetFire() * typeFractionMod);
+                typeDmg = nerfType * Random.Range(min, max);
+                break;
+            case 3:
+                min = (float)att.GetWater() - ((float)att.GetWater() * typeFractionMod);
+                max = (float)att.GetWater() + ((float)att.GetWater() * typeFractionMod);
+                typeDmg = nerfType * Random.Range(min, max);
+                break;
+            case 4:
+                min = (float)att.GetDra() - ((float)att.GetDra() * typeFractionMod);
+                max = (float)att.GetDra() + ((float)att.GetDra() * typeFractionMod);
+                typeDmg = nerfType * Random.Range(min, max);
+                break;
+            case 5:
+                min = (float)att.GetEarth() - ((float)att.GetEarth() * typeFractionMod);
+                max = (float)att.GetEarth() + ((float)att.GetEarth() * typeFractionMod);
+                typeDmg = nerfType * Random.Range(min, max);
+                break;
+        }
+
+        if (cAtk.CounterPlayer(df))
         {
             counterBonus = counterMod * baseDmg;
+            tm.SuperEffective();
         }
         float crit = 0;
-        int critRoll = Random.Range(0, 100);
+        int critRoll = 1;
+        if(df.health < 8)
+        {
+            critRoll = Random.Range(0, 25);
+        }
+        else
+        {
+            critRoll = Random.Range(0, 50);
+        }
+        
 
         if(critRoll <= att.GetAcc())
         {
             crit = critMod * baseDmg;
-            
+            tm.Crit();
         }
         if (att.MatchingType(cAtk))
         {
-            atkTypeBonus = atkTypeMod * baseDmg;
+            atkTypeDmg = nerfType * typeDmg;
 
         }
-        dmg = baseDmg + crit + atkTypeBonus + counterBonus;
+
+        
+
+
+        dmg = baseDmg + crit + atkTypeDmg + counterBonus + typeDmg;
         Debug.Log(dmg);
         return dmg;
+
+        
     }
    
-    void ChooseOppCard()
-    {
-        for(int loop = 0; loop < 4; loop++)
-        {
-            if (opp.MatchingType(oppDeck[loop]))
-            {
-                PlayCardOpp(oppDeck[loop]);
-                oppIndex = loop;
-                return;
-            }
-        }
-        int card = Random.Range(0, 3);
-        oppIndex = card;
-        activeCardOpponent.Change(oppDeck[index]);
-        //Debug.Log(oppIndex);
-    }
-    IEnumerator OpponentPlayDelay()
-    {
-        yield return new WaitForSeconds(1);
-        ChooseOppCard();
-        activeCardOpponent.ShowCard();
-
-    }
+    
+    
 
     void CommenceTurn()
     {
         if (activeCardPlayer.CounterPrimary(activeCardOpponent))
         {
+            tm.PlayerWins();
             Debug.Log("player win");
+            int type = activeCardPlayer.GetType();
+            typeScores[type - 1]+=2;
             float dmg = CalculateDmg(activeCardPlayer, activeCardOpponent, player, opp);
             opp.TakeDamage(dmg);
+            oppHB.BackgroundFlash();
             opp.UpdateHealthBar();
-            ReturnOppCard(oppDeck[oppIndex]);
-            ReturnPlayerCard(playerDeck[index]);
-
+            activeCardPlayer.DeMagnify();
             played = false;
         }
         else if (activeCardOpponent.CounterPrimary(activeCardPlayer))
         {
+            tm.OppWins();
             Debug.Log("opponent win");
             float dmg = CalculateDmg(activeCardOpponent, activeCardPlayer, opp, player);
             player.TakeDamage(dmg);
+            playerHB.BackgroundFlash();
             player.UpdateHealthBar();
-            ReturnOppCard(oppDeck[oppIndex]);
-            ReturnPlayerCard(playerDeck[index]);
+            activeCardOpponent.DeMagnify();
             played = false;
         }
-        else if (activeCardPlayer.SameCard(activeCardOpponent))
+        else if (activeCardPlayer.SameCard(activeCardOpponent) && activeCardOpponent.SameCard(activeCardPlayer))
         {
             Debug.Log("same card");
-            ReturnOppCard(oppDeck[oppIndex]);
-            ReturnPlayerCard(playerDeck[index]);
             played = false;
         }
         
@@ -341,4 +513,283 @@ public class GameManager : MonoBehaviour
         mm.LoadGame();
     }
 
+    
+    
+    IEnumerator FlashOn(GameObject go)
+    {
+        yield return new WaitForSeconds(0.5f);
+        go.SetActive(true);
+    }
+    IEnumerator FlashOff(GameObject go)
+    {
+        yield return new WaitForSeconds(1);
+        go.SetActive(false);
+    }
+    void ReverseMagnify()
+    {
+        foreach(Card element in handCards)
+        {
+            element.DeMagnify();
+        }
+    }
+    
+    IEnumerator GameOverDelay()
+    {
+        yield return new WaitForSeconds(1);
+        mm.Menu();
+    }
+
+    void InstantiateHand() 
+    {
+        int count = 0;
+        List<int> nums = new List<int>();
+        foreach(Card element in handCards)
+        {
+            int num = Random.Range(0, 8);
+            while (nums.Contains(num))
+            {
+                num = Random.Range(0, 8);
+            }
+            nums.Add(num);
+            element.Change(playerDeck[num]);
+            element.ShowCard();
+            count++;
+
+        }
+
+        int k = 0;
+        for(int loop = 0; loop < 8; loop++)
+        {
+            if (!nums.Contains(loop))
+            {
+                playerNextHand[k] = loop;
+                k++;
+            }
+        }
+    }
+    void InstantiateOpponentCards()
+    {
+        int count = 0;
+        List<int> nums = new List<int>();
+        foreach (Card element in oppCards)
+        {
+            int num = Random.Range(0, oppDeck.Length);
+            
+            while (nums.Contains(num))
+            {
+                num = Random.Range(0, oppDeck.Length);
+            }
+            nums.Add(num);
+            element.Change(oppDeck[num]);
+            element.HideCard();
+            count++;
+        }
+
+
+        int k = 0;
+        for (int loop = 0; loop < 8; loop++)
+        {
+            if (!nums.Contains(loop))
+            {
+                oppNextHand[k] = loop;
+                k++;
+            }
+        }
+    }
+    void SetHandPositions()
+    {
+        int count = 0;
+        foreach(Card element in handCards)
+        {
+            element.SetPosition(handCardsPos[count]);
+            count++;
+        }
+        count = 0;
+
+        foreach (Card element in oppCards)
+        {
+            element.SetPosition(oppHandPos[count]);
+            count++;
+        }
+    }
+    void Opponent1()
+    {
+        bool hasPlayed = false;
+        foreach(Card element in oppCards)
+        {
+            if(element.GetPrimaryCode() == 1 && element.GetSecondaryCode() == 1 && element.played ==  false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if(element.GetPrimaryCode() == 2 && element.GetSecondaryCode() == 1 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 3 && element.GetSecondaryCode() == 1 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if(element.GetPrimaryCode() == 1 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+
+        }
+        if (!hasPlayed)
+        {
+            foreach(Card element in oppCards)
+            {
+                if(element.played == false)
+                {
+                    activeCardOpponent.Change(element);
+                    element.PlayCard();
+                    hasPlayed = true;
+                    break;
+                }
+            }
+        }
+    }
+    void Opponent2()
+    {
+        bool hasPlayed = false;
+        foreach (Card element in oppCards)
+        {
+            if (element.GetPrimaryCode() == 2 && element.GetSecondaryCode() == 4 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 3 && element.GetSecondaryCode() == 4 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 1 && element.GetSecondaryCode() == 4 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 2 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+
+        }
+        if (!hasPlayed)
+        {
+            foreach (Card element in oppCards)
+            {
+                if (element.played == false)
+                {
+                    activeCardOpponent.Change(element);
+                    element.PlayCard();
+                    hasPlayed = true;
+                    break;
+                }
+            }
+        }
+    }
+    void Opponent3()
+    {
+        bool hasPlayed = false;
+        foreach (Card element in oppCards)
+        {
+            if (element.GetPrimaryCode() == 3 && element.GetSecondaryCode() == 5 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 1 && element.GetSecondaryCode() == 5 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 2 && element.GetSecondaryCode() == 5 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+            else if (element.GetPrimaryCode() == 3 && element.played == false)
+            {
+                activeCardOpponent.Change(element);
+                element.PlayCard();
+                hasPlayed = true;
+                break;
+            }
+
+        }
+        if (!hasPlayed)
+        {
+            foreach (Card element in oppCards)
+            {
+                if (element.played == false)
+                {
+                    activeCardOpponent.Change(element);
+                    element.PlayCard();
+                    hasPlayed = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    void InsantiateNextHand()
+    {
+        int p = 0;
+        int o = 0;
+        foreach(Card element in handCards)
+        {
+            int num = playerNextHand[p];
+            element.Change(playerDeck[num]);
+            element.ShowCard();
+            p++;
+        }
+        foreach (Card element in oppCards)
+        {
+            int num = oppNextHand[o];
+            element.Change(oppDeck[num]);
+            element.HideCard();
+            o++;
+        }
+    }
+
+    void DeckIni()
+    {
+        int num = 0;
+        foreach(Card element in playerDeck)
+        {
+            int pri = DeckManager.primary[num]; 
+            int sec = DeckManager.secondary[num];
+            element.Change(pri, sec);
+            num++;
+        }
+    }
+    
 }
